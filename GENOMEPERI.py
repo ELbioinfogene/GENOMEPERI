@@ -117,7 +117,7 @@ def GENOME_COMPARE(subjectA,subjectB):
     return MATCH_RESULT
 #8/27 this works
 
-#Compare 2 genomes by chromosome!
+#Compare 2 genomes by chromosome - WORK IN PROGRESS
 def CHROMOSOME_COMPARE(subjectA,subjectB):
     Genome_A_set = set(subjectA.RSINDEX)
     Genome_B_set = set(subjectB.RSINDEX)
@@ -129,6 +129,7 @@ def CHROMOSOME_COMPARE(subjectA,subjectB):
         This could be because the 23&me files I have are from males
         while the Ancestry file is from a female
     '''
+    #8/27 - this only returns a list to corroborate the comment above
     CHR_INDEX = {}
     for N,S in enumerate(MATCH_LIST):
         RS_QUERY = MATCH_LIST[N]
