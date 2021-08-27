@@ -123,11 +123,21 @@ def CHROMOSOME_COMPARE(subjectA,subjectB):
     Genome_B_set = set(subjectB.RSINDEX)
     MATCH_SET = Genome_A_set.intersection(Genome_B_set)
     MATCH_LIST = list(MATCH_SET)
+    '''Note:
+        23&Me data labels chromosomes 1-22,'X','Y', and 'MT'
+        Ancestry labels are 1-22,23&25 ,24 , and 26
+        This could be because the 23&me files I have are from males
+        while the Ancestry file is from a female
+    '''
+    CHR_INDEX = {}
     for N,S in enumerate(MATCH_LIST):
         RS_QUERY = MATCH_LIST[N]
         SNP_A = subjectA.GENOME[RS_QUERY]
         SNP_B = subjectB.GENOME[RS_QUERY]
-    return
+        SNP_A_CHR = SNP_A[0]
+        SNP_B_CHR = SNP_B[0]
+        CHR_INDEX.update({SNP_A_CHR:SNP_B_CHR})
+    return CHR_INDEX
 
 def say_hello():
     print('Test Output')
