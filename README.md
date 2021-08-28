@@ -7,5 +7,3 @@ The resulting SNP_GENOME object has a list RSINDEX which can be used to call SNP
 The object method SEQUENCEQC() evaluates the SNP_GENOME and gives a score of how many SNPS have both alleles properly read (A,T,C,or G)
 
 The function GENOME_COMPARE looks at two SNP_GENOMEs and scores the identity of matched RSIDs
-
-TO DO: make a comparison where identity is sorted by chromosome
