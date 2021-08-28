@@ -27,7 +27,7 @@ class SNP_GENOME:
         GENOMEFILE.close()
         #RAWTXTDATA is every line including \t and \n
         #convert this data to a dictionary
-        #structure {'rs###':[C,P,'A1','A2']}
+        #structure {'rs###':['C',P,'A1','A2']}
         for N,S in enumerate(RAWTXTDATA):
             #individual data line
             LINE = RAWTXTDATA[N]
@@ -94,6 +94,32 @@ class SNP_GENOME:
 
 #Functions for handling SNP_GENOME objects:
 
+#Single SNP GENOTYPE Scorer - to be called by functions below
+def SNP_GENOTYPE_SCORE(SNP_A,SNP_B):
+    #input format: ['C',P,'A1','A2']
+    FINAL_SCORE = 0
+    #Subject A data
+    SUBJECT_A_POSITION = SNP_A[1]
+    SUBJECT_A_ALLELE_1 = SNP_A[2]
+    SUBJECT_A_ALLELE_2 = SNP_A[3]
+    #Subject B data
+    SUBJECT_B_POSITION = SNP_B[1]
+    SUBJECT_B_ALLELE_1 = SNP_B[2]
+    SUBJECT_B_ALLELE_2 = SNP_B[3]
+    #Confirm position before proceeding
+    if SUBJECT_A_POSITION == SUBJECT_B_POSITION:
+        #check for exact mstch
+        if (SUBJECT_A_ALLELE_1 + SUBJECT_A_ALLELE_2) == (SUBJECT_B_ALLELE_1 + SUBJECT_B_ALLELE_2):
+            FINAL_SCORE = 1
+        else:
+            ScoreAllele1_1 = int(SUBJECT_A_ALLELE_1 == SUBJECT_B_ALLELE_1)
+            ScoreAllele1_2 = int(SUBJECT_A_ALLELE_1 == SUBJECT_B_ALLELE_2)
+            ScoreAllele2_1 = int(SUBJECT_A_ALLELE_2 == SUBJECT_B_ALLELE_1)
+            ScoreAllele2_2 = int(SUBJECT_A_ALLELE_2 == SUBJECT_B_ALLELE_2)
+            FINAL_SCORE = 0.25*(ScoreAllele1_1 + ScoreAllele1_2 + ScoreAllele2_1 + ScoreAllele2_2)    
+    return FINAL_SCORE
+
+
 #Compare 2 SNP_GENOMES
 def GENOME_COMPARE(subjectA,subjectB):
     Genome_A_set = set(subjectA.RSINDEX)
@@ -108,16 +134,15 @@ def GENOME_COMPARE(subjectA,subjectB):
         RS_QUERY = MATCH_LIST[N]
         SNP_A = subjectA.GENOME[RS_QUERY]
         SNP_B = subjectB.GENOME[RS_QUERY]
-        if SNP_A[2] == SNP_B[2]:
-            MATCH_SCORE = MATCH_SCORE + 0.5
-        if SNP_A[3] == SNP_B[3]:
-            MATCH_SCORE = MATCH_SCORE + 0.5
+        SINGLE_SNP_SCORE = SNP_GENOTYPE_SCORE(SNP_A,SNP_B)
+        MATCH_SCORE = MATCH_SCORE + SINGLE_SNP_SCORE
+        
     IDENTITY_SCORE = MATCH_SCORE / MATCH_SIZE
     MATCH_RESULT = [f'{subjectA.NAME}:{subjectB.NAME}',MATCH_SCORE,MATCH_SIZE,IDENTITY_SCORE,MATCH_DEPTH_A,MATCH_DEPTH_B]
     return MATCH_RESULT
 #8/27 this works
 
-#Compare 2 genomes by chromosome - WORK IN PROGRESS
+#Compare 2 genomes by chromosome!
 def CHROMOSOME_COMPARE(subjectA,subjectB):
     Genome_A_set = set(subjectA.RSINDEX)
     Genome_B_set = set(subjectB.RSINDEX)
@@ -129,7 +154,7 @@ def CHROMOSOME_COMPARE(subjectA,subjectB):
         This could be because the 23&me files I have are from males
         while the Ancestry file is from a female
     '''
-    #8/27 - this only returns a list to corroborate the comment above
+    #For now this loop only corroborates the comment above
     CHR_INDEX = {}
     for N,S in enumerate(MATCH_LIST):
         RS_QUERY = MATCH_LIST[N]
