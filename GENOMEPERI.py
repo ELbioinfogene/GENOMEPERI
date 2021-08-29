@@ -40,11 +40,20 @@ class SNP_GENOME:
                 #https://stackoverflow.com/questions/4664850/how-to-find-all-occurrences-of-a-substring
                 TAB_INDEX = [m.start() for m in re.finditer('\t',TABBED_LINE)]
                 #23&me formating
+                #8/29 DONE: have this clean up chromosome IDs
+                #use Integers 1-22, 23 for 'X', 24 for 'Y', and 26 for 'MT'
+                #TO DO - get # of reads per chromosome
+                #get a count of chromosomes - for potential future compatibiltiy with nonhuman data
+                ChromosomeLookup = {'X':23, 'Y':24, 'MT':26}
                 if TXT_TYPE == 0:
                     self.SOURCE = '23&Me'
                     RS_key = LINE[0:TAB_INDEX[0]]
                     #Chromosome can be 'X' 'Y' or 'mt' so do not make it an INT
                     CHROMOSOME = TABBED_LINE[TAB_INDEX[0]+1:TAB_INDEX[1]]
+                    if CHROMOSOME == 'X' or CHROMOSOME =='Y' or CHROMOSOME =='MT':
+                        CHROMOSOME = ChromosomeLookup[CHROMOSOME]
+                    else:
+                        CHROMOSOME = int(CHROMOSOME)
                     GENE_POSITION = int(TABBED_LINE[TAB_INDEX[1]+1:TAB_INDEX[2]])
                     allele1 = TABBED_LINE[TAB_INDEX[2]+1:TAB_INDEX[2]+2]
                     allele2 = TABBED_LINE[TAB_INDEX[2]+2:TAB_INDEX[2]+3]
@@ -59,6 +68,10 @@ class SNP_GENOME:
                     #Detect header line
                     if RS_key != 'rsid':
                         CHROMOSOME = TABBED_LINE[TAB_INDEX[0]+1:TAB_INDEX[1]]
+                        CHROMOSOME = int(CHROMOSOME)
+                        #Consolidate all 'X' chromosome entries into one int ID
+                        if CHROMOSOME == 25:
+                            CHROMOSOME = 23
                         GENE_POSITION = int(TABBED_LINE[TAB_INDEX[1]+1:TAB_INDEX[2]])
                         allele1 = TABBED_LINE[TAB_INDEX[2]+1:TAB_INDEX[3]]
                         allele2 = TABBED_LINE[TAB_INDEX[3]+1:TAB_INDEX[3]+2]
@@ -77,7 +90,7 @@ class SNP_GENOME:
         EXPECTED_BASES = ' ATCG'
         for N,S in enumerate(self.RSINDEX):
             RS_key = self.RSINDEX[N]
-            SNP_READ = self.GENOME[RS_key]
+            SNP_READ = self.GENOME[RS_key] 
             SNP_SCORE = 0
             a1 = SNP_READ[2]
             a2 = SNP_READ[3]
@@ -119,7 +132,6 @@ def SNP_GENOTYPE_SCORE(SNP_A,SNP_B):
             FINAL_SCORE = 0.25*(ScoreAllele1_1 + ScoreAllele1_2 + ScoreAllele2_1 + ScoreAllele2_2)    
     return FINAL_SCORE
 
-
 #Compare 2 SNP_GENOMES
 def GENOME_COMPARE(subjectA,subjectB):
     Genome_A_set = set(subjectA.RSINDEX)
@@ -136,14 +148,14 @@ def GENOME_COMPARE(subjectA,subjectB):
         SNP_B = subjectB.GENOME[RS_QUERY]
         SINGLE_SNP_SCORE = SNP_GENOTYPE_SCORE(SNP_A,SNP_B)
         MATCH_SCORE = MATCH_SCORE + SINGLE_SNP_SCORE
-        
     IDENTITY_SCORE = MATCH_SCORE / MATCH_SIZE
     MATCH_RESULT = [f'{subjectA.NAME}:{subjectB.NAME}',MATCH_SCORE,MATCH_SIZE,IDENTITY_SCORE,MATCH_DEPTH_A,MATCH_DEPTH_B]
     return MATCH_RESULT
 #8/27 this works
 
-#Compare 2 genomes by chromosome!
+#Compare 2 genomes by chromosome - 8/29 WORK IN PROGRESS
 def CHROMOSOME_COMPARE(subjectA,subjectB):
+    #To Do: confirm both subjects have the same # of chromosomes to compare
     Genome_A_set = set(subjectA.RSINDEX)
     Genome_B_set = set(subjectB.RSINDEX)
     MATCH_SET = Genome_A_set.intersection(Genome_B_set)
@@ -154,16 +166,29 @@ def CHROMOSOME_COMPARE(subjectA,subjectB):
         This could be because the 23&me files I have are from males
         while the Ancestry file is from a female
     '''
-    #For now this loop only corroborates the comment above
-    CHR_INDEX = {}
+    #8/29 - this is now addressed in the SNP_GENOME _init_
+    #all instances now have uniform int ID for chromosomes
+    #use a dictionary to convert int to string for user display later
+    #ie {23:'X'}
+    #To do - populate CHR_SCORE_INDEX as a list of lists (one per chromosome)
+    #Each list will have the subject names, the chromosome ID int,
+    #the number of matches in the chromosome, and the match score
+    CHR_SCORE_INDEX = []
     for N,S in enumerate(MATCH_LIST):
         RS_QUERY = MATCH_LIST[N]
         SNP_A = subjectA.GENOME[RS_QUERY]
         SNP_B = subjectB.GENOME[RS_QUERY]
         SNP_A_CHR = SNP_A[0]
         SNP_B_CHR = SNP_B[0]
-        CHR_INDEX.update({SNP_A_CHR:SNP_B_CHR})
-    return CHR_INDEX
+        #confirm same chromosome
+        if SNP_A_CHR == SNP_B_CHR:
+            #get CHR_SCORE_INDEX entry for this chromosome
+            #increment match count
+            #calculate single SNP score
+            SNP_SCORE = SNP_GENOTYPE_SCORE(SNP_A, SNP_B)
+            #add to match score
+            
+    return CHR_SCORE_INDEX
 
 def say_hello():
     print('Test Output')
