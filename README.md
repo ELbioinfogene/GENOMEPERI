@@ -12,7 +12,11 @@ SNP_GENOME objects have two dictionaries: .GENOME and .CHROMOSOME_COUNT_LOG
 
 The object method SEQUENCEQC() evaluates the SNP_GENOME and gives a score of how many SNPS have both alleles properly read (A,T,C,or G)
 
-The function GENOME_COMPARE looks at two SNP_GENOMEs and scores the identity of matched RSIDs
+The function GENOME_COMPARE() looks at two SNP_GENOMEs and scores the identity of matched RSIDs
+
+The function CHROMOSOME_COMPARE() matches RSIDs and scores identity by chromosome
+
+DISPLAY_CHROMOSOME_SCORES() displays the results of CHROMOSOME_COMPARE()
 
 *Note on Chromosome ID number: All reads on Chromosome X are marked as Chromosome 23, Y is 24, and Mitochondria is 26.*
 
