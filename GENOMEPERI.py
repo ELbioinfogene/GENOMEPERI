@@ -126,8 +126,6 @@ class SNP_GENOME:
         #make list of RSIDs
         self.RSINDEX = list(self.GENOME)
 
-        #determine number of chromosomes
-        #self.CHROMOSOME_TOTAL = len(list(self.CHROMOSOME_COUNT_LOG))
     #end of INIT
     
     #This function will go through each entry and score sequence quality
