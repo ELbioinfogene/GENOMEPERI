@@ -14,7 +14,7 @@ The object method SEQUENCEQC() evaluates the SNP_GENOME and gives a score of how
 
 The function GENOME_COMPARE looks at two SNP_GENOMEs and scores the identity of matched RSIDs
 
-*Note on Chromosome ID number: All reads on Chromsome X are marked as Chromosome 23, Y is 24 and Mitochondria is 26.*
+*Note on Chromosome ID number: All reads on Chromosome X are marked as Chromosome 23, Y is 24, and Mitochondria is 26.*
 
 The 23&Me data I have uses strings 'X', 'Y', and 'MT' - however my datasets are both from males.
 
