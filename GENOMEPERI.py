@@ -10,7 +10,7 @@ from re import finditer as SUBSTRING_ITERATOR
 
 '''SNP_GENOME class definition and associated functions'''
 #8/27/21 - this is working
-#8/29/21 TO DO: Chromosome read counting
+#9/7/21 - chromosome read counting works
 class SNP_GENOME:
     #Object definition
     #Subject Name
@@ -75,6 +75,7 @@ class SNP_GENOME:
                     ENTRY_CONFIRMED = 1
                     #update self.GENOME dictionary
                     self.GENOME.update(DICT_ENTRY)
+                    #Per Chromosome Read Counting
                     try:
                         CHR_READ_COUNT = self.CHROMOSOME_COUNT_LOG[CHROMOSOME]
                         CHR_READ_COUNT = CHR_READ_COUNT +1
@@ -109,7 +110,7 @@ class SNP_GENOME:
                         ENTRY_CONFIRMED = 1
                         #update self.GENOME dictionary
                         self.GENOME.update(DICT_ENTRY)
-                        #Check if any reads have been made for this chromosome
+                        #Per Chromosome Read Counting
                         try:
                             CHR_READ_COUNT = self.CHROMOSOME_COUNT_LOG[CHROMOSOME]
                             CHR_READ_COUNT = CHR_READ_COUNT +1
@@ -125,7 +126,6 @@ class SNP_GENOME:
 
         #make list of RSIDs
         self.RSINDEX = list(self.GENOME)
-
     #end of INIT
     
     #This function will go through each entry and score sequence quality
@@ -149,13 +149,13 @@ class SNP_GENOME:
                 SNP_SCORE = SNP_SCORE + 0.5
             self.READ_SCORE = self.READ_SCORE + SNP_SCORE
         self.READ_DEPTH = self.READ_SCORE / self.TOTAL_READS
-        #8/27/21 this works
 #end of SNP_GENOME object & functions
 
 '''Functions for handling SNP_GENOME objects:'''
 
 #Convert two genomes into a set, find the intersection,
 # and return a list of common rsids
+#called by GENOME_COMPARE() and CHROMOSOME_COMPARE()
 def SNP_SET_INTERSECT(subjectA,subjectB):
     RSID_A_set = set(subjectA.RSINDEX)
     RSID_B_set = set(subjectB.RSINDEX)
@@ -190,7 +190,6 @@ def SNP_GENOTYPE_SCORE(SNP_A,SNP_B):
             ScoreAllele2_2 = int(SUBJECT_A_ALLELE_2 == SUBJECT_B_ALLELE_2)
             FINAL_SCORE = 0.25*(ScoreAllele1_1 + ScoreAllele1_2 + ScoreAllele2_1 + ScoreAllele2_2)    
     return FINAL_SCORE
-#8/28 this works
 
 #Compare 2 whole SNP_GENOMES
 def GENOME_COMPARE(subjectA,subjectB):
@@ -208,33 +207,90 @@ def GENOME_COMPARE(subjectA,subjectB):
     IDENTITY_SCORE = MATCH_SCORE / MATCH_SIZE
     MATCH_RESULT = [f'{subjectA.NAME}:{subjectB.NAME}',MATCH_SCORE,MATCH_SIZE,IDENTITY_SCORE,MATCH_DEPTH_A,MATCH_DEPTH_B]
     return MATCH_RESULT
-#8/27 this works
 
-#Compare 2 SNP_GENOMES by chromosome - 8/29 WORK IN PROGRESS
+#Compare 2 SNP_GENOMES by chromosome
 def CHROMOSOME_COMPARE(subjectA,subjectB):
-    #To Do: confirm both subjects have the same # of chromosomes to compare
-    #use sets to find overlapping rsids
-    MATCH_LIST = SNP_SET_INTERSECT(subjectA,subjectB)
-    '''Note:
-        23&Me data labels chromosomes 1-22,'X','Y', and 'MT'
-        Ancestry labels are 1-22,23&25 ,24 , and 26
-        This could be because the 23&me files I have are from males
-        while the Ancestry file is from a female
-    '''
-    #8/29 - this is now addressed in the SNP_GENOME _init_
-    #all instances now have uniform int ID for chromosomes
-    #use a dictionary to convert int to string for user display later
-    #ie {23:'X', 24:'Y', 26:'MT'}
-    #To do- use each SNP_GENOME's chromosome listing (WIP)
-    #to get read sizes and match deptsh
-    for N,S in enumerate(MATCH_LIST):
-        RS_QUERY = MATCH_LIST[N]
-        SNP_A = subjectA.GENOME[RS_QUERY]
-        SNP_B = subjectB.GENOME[RS_QUERY]
+    #Format of CHR_SCORE_INDEX dictionary
+    #{CHR_INT: [MATCH_SCORE,MATCH_SIZE,SubjectA_Chromosome_Reads,SubjectB_Chromosome_Reads]}
+    CHR_SCORE_INDEX = {}
+    #Confirm Subjects have identical Chromosome Counts
+    if subjectA.CHROMOSOME_TOTAL == subjectB.CHROMOSOME_TOTAL:
+        MATCH_LIST = SNP_SET_INTERSECT(subjectA,subjectB)
+        #Go through each matched entry and use chromosome ID to bin data
+        for N,S in enumerate(MATCH_LIST):
+            RS_QUERY = MATCH_LIST[N]
+            SNP_A = subjectA.GENOME[RS_QUERY]
+            SNP_B = subjectB.GENOME[RS_QUERY]
+            #Confirm Chromosome Match
+            if SNP_A[0] == SNP_B[0]:
+                Chromosome = SNP_A[0]
+                #SCORE GENOTYPE
+                SINGLE_SNP_SCORE = SNP_GENOTYPE_SCORE(SNP_A,SNP_B)
+                #Has this chromosome been added to CHR_SCORE_INDEX?
+                try:
+                    CHR_MATCH_DATA = CHR_SCORE_INDEX[Chromosome]
+                    #Update score for this chromosome
+                    CHR_MATCH_DATA[0] = CHR_MATCH_DATA[0] + SINGLE_SNP_SCORE
+                    #Increment # of matched RSIDs in Chromosome
+                    CHR_MATCH_DATA[1] = CHR_MATCH_DATA[1] + 1
+                    UPDATE_SCORE = {Chromosome:CHR_MATCH_DATA}
+                    CHR_SCORE_INDEX.update(UPDATE_SCORE)
+                #Initialize CHR_SCORE_INDEX entry when none exists
+                except KeyError:
+                    SubjectA_CHR_READ_COUNT = subjectA.CHROMOSOME_COUNT_LOG[Chromosome]
+                    SubjectB_CHR_READ_COUNT = subjectB.CHROMOSOME_COUNT_LOG[Chromosome]
+                    CHR_MATCH_START = [SINGLE_SNP_SCORE, 1, SubjectA_CHR_READ_COUNT, SubjectB_CHR_READ_COUNT]
+                    INITIAL_SCORE = {Chromosome:CHR_MATCH_START}
+                    CHR_SCORE_INDEX.update(INITIAL_SCORE)
+    else:
+        print(f'WARNING:{subjectA.NAME} does not have the same chromosome count as {subjectB.NAME}\nNo comparison made.')
         
     return CHR_SCORE_INDEX
+
+#function for displaying CHR_SCORE_INDEX results
+def DISPLAY_CHROMOSOME_SCORES(subjectA, subjectB, CHR_SCORE_INDEX):
+    #dictionary for using string names
+    String_dict = {23:'X', 24:'Y', 26:'MT'}
+    SubjectA_string = subjectA.NAME
+    SubjectB_string = subjectB.NAME
+    #FOR NOW THIS ONLY SUPPORTS HUMAN DATA (1-24, 26)
+    #Display Chromosome Results
+    for n in range(1,25):
+        #X & Y case
+        try:
+            CHR_NAME = String_dict[n]
+            CHR_RESULTS = CHR_SCORE_INDEX[n]
+            CHR_IDENTITY_SCORE = 100*(CHR_RESULTS[0] / CHR_RESULTS[1])
+            subject_A_depth = 100*(CHR_RESULTS[1] / CHR_RESULTS[2])
+            subject_B_depth = 100*(CHR_RESULTS[1] / CHR_RESULTS[3])
+            print(f'{SubjectA_string} Chromosome {CHR_NAME} is {CHR_IDENTITY_SCORE}% identical to {SubjectB_string} Chromosome {CHR_NAME}')
+            print(f'This match covers {subject_A_depth}% of {SubjectA_string} Chromosome {CHR_NAME}')
+            print(f'This match covers {subject_B_depth}% of {SubjectB_string} Chromosome {CHR_NAME}')
+            print('***\n')
+        #Chromosomes 1-22
+        except KeyError:
+            CHR_RESULTS = CHR_SCORE_INDEX[n]
+            CHR_IDENTITY_SCORE = 100*(CHR_RESULTS[0] / CHR_RESULTS[1])
+            subject_A_depth = 100*(CHR_RESULTS[1] / CHR_RESULTS[2])
+            subject_B_depth = 100*(CHR_RESULTS[1] / CHR_RESULTS[3])
+            print(f'{SubjectA_string} Chromosome {n} is {CHR_IDENTITY_SCORE}% identical to {SubjectB_string} Chromosome {n}')
+            print(f'This match covers {subject_A_depth}% of {SubjectA_string} Chromosome {n}')
+            print(f'This match covers {subject_B_depth}% of {SubjectB_string} Chromosome {n}')
+            print('***\n')
+
+    #Display MT DNA result
+    MT_RESULTS = CHR_SCORE_INDEX[26]
+    MT_IDENTITY_SCORE = 100*(MT_RESULTS[0] / MT_RESULTS[1])
+    subject_A_depth = 100*(MT_RESULTS[1] / CHR_RESULTS[2])
+    subject_B_depth = 100*(MT_RESULTS[1] / CHR_RESULTS[3])
+    print(f'{SubjectA_string} Mitochondria DNA is {MT_IDENTITY_SCORE}% identical to {SubjectB_string} Mitochondria DNA')
+    print(f'This match covers {subject_A_depth}% of {SubjectA_string} Mitochondria DNA')
+    print(f'This match covers {subject_B_depth}% of {SubjectB_string} Mitochondria DNA')
+    print('***\n')
+    return
 #End of SNP_GENOME comparison functions
 
+#TO DO - function that generates a report from an input list of RSIDs
 '''Quick module test'''
 def say_hello():
     print('Test Output')

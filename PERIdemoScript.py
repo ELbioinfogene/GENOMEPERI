@@ -26,7 +26,7 @@ S01 = GENOMEPERI.SNP_GENOME(NAME_B,ANOTHER_DNA_FILE,B_TYPE)
 S01.SEQUENCEQC()
 print(f'Subject {S01.NAME} depth score: {S01.READ_DEPTH}')
 
-#make comparisons between individuals
+#Compare whole genome of 2 individuals
 COMPARE_A_S = GENOMEPERI.GENOME_COMPARE(A00,S01)
 #output is a list where [0] is the subject names
 #[1] is a score of genotype matches
@@ -35,4 +35,10 @@ COMPARE_A_S = GENOMEPERI.GENOME_COMPARE(A00,S01)
 #[4] is the match depth of subject A ([2]/subjectA.TOTAL_READS)
 #[5] is the match depth of subject B ([2]/subjectB.TOTAL_READS)
 
+#Display the result
 print(f'{COMPARE_A_S[0]} has approximately {COMPARE_A_S[4]} overlap with {COMPARE_A_S[3]} identity')
+
+#compare 2 individuals by Chromosome
+A_S_CHROMOSOME_COMPARE = GENOMEPERI.CHROMOSOME_COMPARE(A00,S01)
+#Display the results in a user-friendly format
+GENOMEPERI.DISPLAY_CHROMOSOME_SCORES(A00,S01,A_S_CHROMOSOME_COMPARE)
