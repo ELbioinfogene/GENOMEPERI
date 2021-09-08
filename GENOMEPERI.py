@@ -54,7 +54,6 @@ class SNP_GENOME:
                 #23&me formating
                 #8/29 DONE: have this clean up chromosome IDs
                 #use Integers 1-22, 23 for 'X', 24 for 'Y', and 26 for 'MT'
-                #TO DO - get # of reads per chromosome
                 #get a count of chromosomes - for potential future compatibiltiy with nonhuman data
                 ChromosomeLookup = {'X':23, 'Y':24, 'MT':26}
                 if TXT_TYPE == 0:
@@ -129,11 +128,11 @@ class SNP_GENOME:
     #end of INIT
     
     #This function will go through each entry and score sequence quality
-    #IE: if SNP has 2 alleles, both either 'A','C','G',or 'T' it is scored 1, otherwise it is 0.5 or 0
-    #TO DO: Add support for individual chromosomes    
+    #IE: if SNP has 2 alleles, both either 'A','C','G',or 'T' it is scored 1, otherwise it is 0.5 or 0  
     def SEQUENCEQC(self):
         self.TOTAL_READS = len(self.GENOME)
         self.READ_SCORE = 0
+        self.CHROMOSOME_QC = {}
         EXPECTED_BASES = ' ATCG'
         for N,S in enumerate(self.RSINDEX):
             RS_key = self.RSINDEX[N]
@@ -148,6 +147,19 @@ class SNP_GENOME:
             if A2_QC > 0:
                 SNP_SCORE = SNP_SCORE + 0.5
             self.READ_SCORE = self.READ_SCORE + SNP_SCORE
+            #Chromosome QC
+            Chromosome = SNP_READ[0]
+            try:
+                Chromosome_score = self.CHROMOSOME_QC[Chromosome]
+                Chromosome_score = Chromosome_score + SNP_SCORE
+                CHROMOSOME_QC_ENTRY = {Chromosome:Chromosome_score}
+                self.CHROMOSOME_QC.update(CHROMOSOME_QC_ENTRY)
+            #Initialize the chromosome entry if it does not yet exist
+            except KeyError:
+                Chromosome_score = SNP_SCORE
+                CHROMOSOME_QC_ENTRY = {Chromosome:Chromosome_score}
+                self.CHROMOSOME_QC.update(CHROMOSOME_QC_ENTRY)
+            
         self.READ_DEPTH = self.READ_SCORE / self.TOTAL_READS
 #end of SNP_GENOME object & functions
 
