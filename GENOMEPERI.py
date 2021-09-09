@@ -161,10 +161,44 @@ class SNP_GENOME:
                 self.CHROMOSOME_QC.update(CHROMOSOME_QC_ENTRY)
             
         self.READ_DEPTH = self.READ_SCORE / self.TOTAL_READS
+
+    #Display Quality Control Statistics
+    def QC_REPORT(self):
+        #9/8/21 for now human only
+        #Whole Genome report:
+        print(f'Subject {self.NAME} DNA report has {self.TOTAL_READS} SNP records')
+        print(f'The quality score of the {self.TOTAL_READS} SNPs is {self.READ_SCORE}')
+        QUALITY_PERCENTAGE = 100*round(self.READ_DEPTH,4)
+        print(f'This DNA report quality is {QUALITY_PERCENTAGE}%')
+        print('***\n')
+        #Individual Chromosome Report:
+        String_dict = {23:'X', 24:'Y', 26:'MT'}
+        for n in range(1,25):
+            CHROMOSOME_SCORE = self.CHROMOSOME_QC[n]
+            CHROMOSOME_READS = self.CHROMOSOME_COUNT_LOG[n]
+            CHROMOSOME_DEPTH = CHROMOSOME_SCORE/CHROMOSOME_READS
+            CHROMOSOME_QUAL_PERCENT = 100*round(CHROMOSOME_DEPTH,3)
+            try:
+                Chromosome_String = String_dict[n]
+            except KeyError:
+                Chromosome_String = str(n)
+            print(f'Chromosome {Chromosome_String} contains {CHROMOSOME_READS} SNPS')
+            print(f'Chromosome {Chromosome_String} quality score: {CHROMOSOME_SCORE}')
+            print(f'Chromosome {Chromosome_String} report quality is {CHROMOSOME_QUAL_PERCENT}%')
+            print('***\n')
+        #MT DNA
+        MT_SCORE = self.CHROMOSOME_QC[26]
+        MT_READS = self.CHROMOSOME_COUNT_LOG[26]
+        MT_DEPTH = MT_SCORE/MT_READS
+        MT_QUAL_PERCENT = 100*round(MT_DEPTH,3)
+        print(f'Mitochondrial DNA contains {MT_READS} SNPS')
+        print(f'Mitochondrial DNA quality score: {MT_SCORE}')
+        print(f'Mitochondrial DNA report quality is {MT_QUAL_PERCENT}%')
+        print('***\n')
+        
 #end of SNP_GENOME object & functions
 
 '''Functions for handling SNP_GENOME objects:'''
-
 #Convert two genomes into a set, find the intersection,
 # and return a list of common rsids
 #called by GENOME_COMPARE() and CHROMOSOME_COMPARE()
@@ -255,8 +289,7 @@ def CHROMOSOME_COMPARE(subjectA,subjectB):
                     INITIAL_SCORE = {Chromosome:CHR_MATCH_START}
                     CHR_SCORE_INDEX.update(INITIAL_SCORE)
     else:
-        print(f'WARNING:{subjectA.NAME} does not have the same chromosome count as {subjectB.NAME}\nNo comparison made.')
-        
+        print(f'WARNING:{subjectA.NAME} does not have the same chromosome count as {subjectB.NAME}\nNo comparison made.') 
     return CHR_SCORE_INDEX
 
 #function for displaying CHR_SCORE_INDEX results
@@ -302,7 +335,43 @@ def DISPLAY_CHROMOSOME_SCORES(subjectA, subjectB, CHR_SCORE_INDEX):
     return
 #End of SNP_GENOME comparison functions
 
-#TO DO - function that generates a report from an input list of RSIDs
+'''
+Functions for reporting on RSID groups
+'''
+#SNP_REPORTING - function that generates a report from an input list of RSIDs
+def SNP_REPORTING(SUBJECT,QUERY_LIST):
+    #loop through every RS string in the QUERY_LIST
+    REPORT_LISTING = []
+    QUERY_SIZE = len(QUERY_LIST)
+    HIT = 0
+    MISS = 0
+    #String for coving absent RSIDs
+    NULL_STRING = 'NONE'
+    for N,S in enumerate(QUERY_LIST):
+        RS_QUERY = QUERY_LIST[N]
+        #Look up query RSID string in SUBJECT.GENOME dictionary
+        try:
+            RS_RESULT = SUBJECT.GENOME[RS_QUERY]
+            #Individual entry format ['NAME','RSID','ALLELE1','ALLELE2']
+            REPORT_ENTRY = [SUBJECT.NAME, RS_QUERY, RS_RESULT[2], RS_RESULT[3]]
+            REPORT_LISTING.append(REPORT_ENTRY)
+            HIT = HIT + 1
+        except KeyError:
+            REPORT_ENTRY = [SUBJECT.NAME, RS_QUERY, NULL_STRING, NULL_STRING]
+            REPORT_LISTING.append(REPORT_ENTRY)
+            MISS = MISS + 1
+    #Include values for Quality COntrol
+    #FINAL_ENTRY format ['NAME', RSID_TOTAL, HITS, MISSES]
+    FINAL_ENTRY = [SUBJECT.NAME, QUERY_SIZE, HIT, MISS]
+    REPORT_LISTING.append(FINAL_ENTRY)
+    return REPORT_LISTING
+#9/9/21 - this is working
+
+#TO DO - function that calls entrez / dbSNP for additional data on
+#           specific SNPs (will introduce additional dependencies - FORK?)
+#TO DO - 'sequence builder' function - makes a best guess at a specific gene
+#           sequence from an individual's SNP genome
+
 '''Quick module test'''
 def say_hello():
     print('Test Output')
